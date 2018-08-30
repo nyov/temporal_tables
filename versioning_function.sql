@@ -106,8 +106,15 @@ BEGIN
 
     IF TG_OP = 'UPDATE' THEN
       -- On UPDATE we always have a NEW.sys_period, which equals OLD.sys_period [range_lower] if not explicitly set
-      IF NEW.sys_period IS NOT NULL AND lower(NEW.sys_period) > range_lower THEN
+      IF NEW.sys_period IS NOT NULL AND upper(NEW.sys_period) IS NULL AND lower(NEW.sys_period) > range_lower THEN
         -- If given a sys_period, use it's lower bound instead of current_timestamp
+        RAISE NOTICE 'We have a NEW.sys_period %', lower(NEW.sys_period);
+        RAISE NOTICE 'and current_timestamp is %', time_stamp_to_use;
+
+        RAISE NOTICE 'We have a OLD.sys_period %', lower(OLD.sys_period);
+        RAISE NOTICE 'while range_lower is     %', range_lower; -- same
+        RAISE NOTICE 'with upperOLD.sys_period %', upper(OLD.sys_period);
+
         time_stamp_to_use := lower(NEW.sys_period);
       END IF;
     END IF;
@@ -186,7 +193,10 @@ BEGIN
 
   IF TG_OP = 'INSERT' THEN
     -- On INSERT we have a NEW.sys_period if explicitly given (or by default value for column)
-    IF NEW.sys_period IS NOT NULL THEN
+    IF NEW.sys_period IS NOT NULL AND upper(NEW.sys_period) IS NULL THEN
+      RAISE NOTICE 'We have a NEW.sys_period %', lower(NEW.sys_period);
+      RAISE NOTICE 'and current_timestamp is %', time_stamp_to_use;
+
       time_stamp_to_use := lower(NEW.sys_period);
     END IF;
   END IF;
